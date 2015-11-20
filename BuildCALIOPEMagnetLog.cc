@@ -1,5 +1,24 @@
 
 
+#include "G4Material.hh"
+#include "G4NistManager.hh"
+#include "G4LogicalVolume.hh"
+#include "G4SystemOfUnits.hh"
+#include "G4Box.hh"
+#include "G4PVPlacement.hh"
+#include "G4LogicalVolume.hh"
+#include "G4ThreeVector.hh"
+#include "G4VisAttributes.hh"
+#include "G4Colour.hh"
+#include "G4Cons.hh"
+#include <math.h>
+#include "G4RotationMatrix.hh"
+#include "G4Tubs.hh"
+#include "G4VisAttributes.hh"
+#include "G4Colour.hh"
+#include "G4SubtractionSolid.hh"
+
+
 
 
 G4LogicalVolume* DetectorConstruction::BuildCALIOPEMagnetLog(){
@@ -48,6 +67,11 @@ to whatever the world's logic empty space is
 	G4double maxWireLayers = 15.0;
 	G4double wireDiameter = 4.621*mm;
 	G4double copperCylHalfz = 125*mm;
+	G4double boreHoleRadius = 8.0*mm;
+	G4double REALboreHoleDepth = 60.0*mm;
+	//this FAKE/REAL sheme allows you to see the hole in visualization (INPUT EXPERIMENTAL BOREHOLEDEPTH IN REAL OPTION)
+	G4double FAKEboreHoleDepth = REALboreHoleDepth + 0.01*mm;
+
 	
 
 	//define materials
@@ -76,7 +100,13 @@ to whatever the world's logic empty space is
 	G4double Pi = pi; 
 	G4Cons* poleCone = new G4Cons("pole", 0.0, poleRadius, 0.0, radius, chamferHeight1/2, 0.0, 2*Pi);
 
-	G4LogicalVolume* poleLog = new G4LogicalVolume(poleCone, sFe, "Pole");
+	G4Tubs* boreHole = new G4Tubs("boreHole", 0.0, boreHoleRadius, FAKEboreHoleDepth/2 + 0.005*mm, 0, 2*Pi);
+	
+	//subtract bore hole from the poles
+	G4ThreeVector boreHoleTransform(0.0*mm, 0.0*mm, FAKEboreHoleDepth/2 - chamferHeight1/2 - 0.01*mm);
+	G4SubtractionSolid* poleConeMINUSboreHole = new G4SubtractionSolid("Cone-Hole", poleCone, boreHole, 0, boreHoleTransform);
+
+	G4LogicalVolume* poleLog = new G4LogicalVolume(poleConeMINUSboreHole, sFe, "Pole");
 
 	G4double pos_x = origx;
 	G4double pos_y = origy;
@@ -98,14 +128,19 @@ to whatever the world's logic empty space is
 	G4Tubs* longBar = new G4Tubs("longBar", 0.0, radius, halfz2, 0.0, 2*Pi);
 	G4double halfz3 = (width-poleRadius)/2;
 	G4Tubs* supportBar = new G4Tubs("supportBar", 0.0, radius, halfz3, 0.0, 2*Pi);
+	
+	//subtract bore hole from the sourcebars
+	G4ThreeVector boreHoleTransform2(0.0*mm, 0.0*mm, halfz1 + chamferHeight1 - (FAKEboreHoleDepth/2) + 0.01*mm);
+	G4SubtractionSolid* sourceBarMINUSboreHole = new G4SubtractionSolid("Cyl-Hole", sourceBar, boreHole, 0, boreHoleTransform2);
 
-	G4LogicalVolume* sourceBarLog = new G4LogicalVolume(sourceBar, sFe, "sourceBar");
+
+	G4LogicalVolume* sourceBarLog = new G4LogicalVolume(sourceBarMINUSboreHole, sFe, "sourceBar");
 	G4LogicalVolume* longBarLog = new G4LogicalVolume(longBar, sFe, "longBar");
 	G4LogicalVolume* supportBarLog = new G4LogicalVolume(supportBar, sFe, "supportBar");
 
 	pos_z = origz + (gapHeight/2) + chamferHeight1 + halfz1;
 	//G4VPhysicalVolume* fPhysTopSourceBar =
-	new G4PVPlacement(0, G4ThreeVector(pos_x, pos_y, pos_z), sourceBarLog, "TopSourceBar", magnetLog, false, 0, true);
+	new G4PVPlacement(rot1, G4ThreeVector(pos_x, pos_y, pos_z), sourceBarLog, "TopSourceBar", magnetLog, false, 0, true);
 	pos_z = origz - (gapHeight/2) - chamferHeight1 - halfz1;
 	//G4VPhysicalVolume* fPhysBottomSourceBar =
 	new G4PVPlacement(0, G4ThreeVector(pos_x, pos_y, pos_z), sourceBarLog, "BottomSourceBar", magnetLog, false, 0, true);
