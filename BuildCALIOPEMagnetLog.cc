@@ -126,7 +126,7 @@ to whatever the world's logic empty space is
 	G4Tubs* sourceBar = new G4Tubs("souceBar", 0.0, radius, halfz1, 0.0, 2*Pi);
 	G4double halfz2 = height/2;
 	G4Tubs* longBar = new G4Tubs("longBar", 0.0, radius, halfz2, 0.0, 2*Pi);
-	G4double halfz3 = (width-poleRadius)/2;
+	G4double halfz3 = (width-radius)/2;
 	G4Tubs* supportBar = new G4Tubs("supportBar", 0.0, radius, halfz3, 0.0, 2*Pi);
 	
 	//subtract bore hole from the sourcebars
